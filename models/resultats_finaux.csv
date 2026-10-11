@@ -1,0 +1,10 @@
+Scénario,Modèle,Seuil,AUC-ROC,PR-AUC,Précision,Rappel,F1
+Précoce (sans S1 ni S2),Régression logistique,0.27,0.84,0.752,0.445,0.908,0.597
+Précoce (sans S1 ni S2),Random Forest,0.25,0.825,0.733,0.424,0.915,0.58
+Précoce (sans S1 ni S2),XGBoost,0.27,0.842,0.764,0.45,0.908,0.602
+Après 1 semestre (sans S2),Régression logistique,0.28,0.913,0.873,0.59,0.898,0.712
+Après 1 semestre (sans S2),Random Forest,0.25,0.906,0.866,0.548,0.923,0.688
+Après 1 semestre (sans S2),XGBoost,0.24,0.914,0.877,0.574,0.912,0.705
+Toutes les variables,Régression logistique,0.28,0.932,0.903,0.637,0.908,0.749
+Toutes les variables,Random Forest,0.27,0.928,0.897,0.617,0.908,0.735
+Toutes les variables,XGBoost,0.25,0.935,0.905,0.637,0.915,0.751

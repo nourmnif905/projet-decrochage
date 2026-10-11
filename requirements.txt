@@ -1,0 +1,10 @@
+streamlit>=1.40
+requests
+pandas
+numpy
+scipy
+scikit-learn
+xgboost
+plotly
+ucimlrepo
+joblib
