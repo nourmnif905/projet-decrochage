@@ -10,8 +10,8 @@ Cas n°10 du catalogue : *Predict Students' Dropout and Academic Success* (UCI, 
 | 2. Préparation | `2_Preparation` | ✅ |
 | 3. Modélisation | `3_Modelisation` | ✅ |
 | 4. Évaluation | `4_Evaluation` | ✅ |
-| 5. Explicabilité (SHAP, LIME) | | à venir |
-| 6. API FastAPI | `api/main.py` + page `6_Prediction_API` | ✅ prédiction (routes SHAP / LIME à venir) |
+| 5. Explicabilité (SHAP, LIME) | `5_Explicabilite` + routes `/explain/*` | ✅ |
+| 6. API FastAPI | `api/main.py` + page `6_Prediction_API` | ✅ |
 
 ## Lancer l'application
 ```bash
@@ -35,7 +35,16 @@ L'adresse de l'API se règle avec la variable d'environnement `API_URL` (défaut
 | `GET /features?model_id=...` | Variables attendues (types, bornes, valeurs par défaut) |
 | `POST /predict` | Probabilité de décrochage et décision pour un étudiant |
 | `POST /predict/batch` | Plusieurs étudiants à la fois |
+| `GET /explain/native` | Importance propre au modèle (coefficients, impureté) |
+| `GET /explain/permutation` | Importance par permutation (baisse d'AUC) |
+| `GET /explain/shap/global` | Données du SHAP summary (beeswarm) et des graphiques de dépendance |
+| `POST /explain/shap` | SHAP local : contribution de chaque variable pour un étudiant |
+| `POST /explain/lime` | LIME local pour le même étudiant |
+| `POST /explain/compare` | SHAP + LIME + phrase de synthèse + cohérence |
 | `POST /reload` | Recharger les modèles après un nouvel entraînement |
+
+Les explications sont données **par variable d'origine** (les colonnes one-hot d'une même variable sont regroupées).
+SHAP n'est pas proposé pour KNN (calcul trop lent) ; LIME fonctionne pour tous les modèles.
 
 Tests : `pytest tests/`
 Les données sont téléchargées automatiquement (UCI). Une copie locale `data/students_dropout.csv` sert de plan B.

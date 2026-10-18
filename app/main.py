@@ -10,6 +10,7 @@ pages = [
     st.Page("pages/2_Preparation.py", title="2 · Préparation", icon="🧹", url_path="preparation"),
     st.Page("pages/3_Modelisation.py", title="3 · Modélisation", icon="🤖", url_path="modelisation"),
     st.Page("pages/4_Evaluation.py", title="4 · Évaluation", icon="📈", url_path="evaluation"),
+    st.Page("pages/5_Explicabilite.py", title="5 · Explicabilité", icon="🔍", url_path="explicabilite"),
     st.Page("pages/6_Prediction_API.py", title="6 · Prédiction (API)", icon="🔌", url_path="prediction"),
 ]
 page = st.navigation(pages)

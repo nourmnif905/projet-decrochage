@@ -198,3 +198,73 @@ def api_call(method, path, timeout=30, **kwargs):
             detail = r.text
         return None, f"Erreur {r.status_code} : {detail}"
     return r.json(), None
+
+
+# ----------------------------------------------------------------------------
+# Éléments d'interface partagés par les pages qui utilisent l'API
+# ----------------------------------------------------------------------------
+def require_api():
+    """Vérifie que l'API répond et qu'elle a des modèles. Renvoie la liste des modèles."""
+    health, err = api_call("GET", "/health", timeout=3)
+    if err:
+        st.error(err)
+        st.code("uvicorn api.main:app --port 8000", language="bash")
+        st.info("Lance cette commande dans un second terminal (venv activé, depuis la racine du projet), "
+                "puis recharge la page.")
+        st.stop()
+    if health["n_models"] == 0:
+        st.warning("L'API ne trouve aucun modèle dans `models/`. Exécute `modelisation.ipynb` "
+                   "puis `evaluation_finale.ipynb`.")
+        st.stop()
+    models, err = api_call("GET", "/models")
+    if err:
+        st.error(err)
+        st.stop()
+    return models
+
+
+def model_selector(models, key="model"):
+    labels = {m["id"]: f"{m['name']} · {m['scenario']} (seuil {m['threshold']})" for m in models}
+    ids = list(labels)
+    default = next((i for i in ids if "__" in i and i.startswith("xgboost") and "toutes" in i), ids[0])
+    mid = st.selectbox("Modèle", ids, index=ids.index(default), format_func=labels.get, key=key)
+    return next(m for m in models if m["id"] == mid)
+
+
+def student_form(specs, df, pool, model_id):
+    """Formulaire de saisie d'un étudiant (réel du jeu de test ou « typique »), modifiable.
+    Renvoie le dictionnaire des valeurs saisies."""
+    start = st.radio("Point de départ", ["Un étudiant réel du jeu de test", "Un étudiant « typique »"],
+                     horizontal=True, key=f"start_{model_id}")
+    if start.startswith("Un étudiant réel"):
+        idx = st.selectbox("Étudiant (index)", list(pool.index[:300]), key=f"idx_{model_id}")
+        base = pool.loc[idx].to_dict()
+        if idx in df.index and "Dropout" in df.columns:
+            statut = "a décroché" if df.loc[idx, "Dropout"] == 1 else "n'a pas décroché"
+            st.caption(f"Statut réel connu : {statut}.")
+        tag = f"idx{idx}"
+    else:
+        base, tag = {}, "typique"
+
+    st.markdown("**Variables de l'étudiant** (modifiables)")
+    values = {}
+    cols = st.columns(3)
+    for i, sp in enumerate(specs):
+        name, kind = sp["name"], sp["type"]
+        default_v = base.get(name, sp.get("default"))
+        key = f"{model_id}_{tag}_{name}"
+        with cols[i % 3]:
+            if kind in ("categorical", "binary"):
+                opts = sp["values"]
+                if default_v not in opts:
+                    default_v = opts[0]
+                values[name] = st.selectbox(name, opts, index=opts.index(default_v), key=key)
+            elif kind == "numeric":
+                conv = int if sp.get("integer") else float
+                values[name] = st.number_input(
+                    name, min_value=conv(sp["min"]), max_value=conv(sp["max"]),
+                    value=conv(min(max(default_v, sp["min"]), sp["max"])),
+                    step=conv(1) if sp.get("integer") else 0.1, key=key)
+            else:
+                values[name] = default_v
+    return {k: (v.item() if hasattr(v, "item") else v) for k, v in values.items()}

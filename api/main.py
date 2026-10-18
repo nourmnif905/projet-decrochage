@@ -1,4 +1,4 @@
-"""API d'interprétation : prédiction (et, plus tard, explications SHAP / LIME).
+"""API d'interprétation : prédiction et explications (SHAP, LIME).
 
 Lancer :  uvicorn api.main:app --reload --port 8000
 Docs   :  http://127.0.0.1:8000/docs   (Swagger, généré automatiquement)
@@ -31,7 +31,7 @@ app = FastAPI(
     title="API de prédiction du décrochage étudiant",
     description=("Service appelé par l'application Streamlit. Il charge les modèles entraînés "
                  "(dossier `models/`) et renvoie la probabilité de décrochage d'un étudiant. "
-                 "Les routes d'explication (SHAP, LIME) seront ajoutées avec le Module 5."),
+                 "Routes d'explication : importance native et par permutation, SHAP (global et local), LIME."),
     version="1.0.0",
 )
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -81,10 +81,15 @@ class Registry:
     def __init__(self):
         self.models: Dict[str, dict] = {}
         self.specs: Dict[str, dict] = {}
+        self.df = None          # jeu de données complet (pour les explications)
+        self._split = None      # (X_train, X_test, y_train, y_test), calculé à la demande
+        self.cache: Dict[Any, Any] = {}   # explications déjà calculées
         self.load()
 
     def load(self):
         self.models.clear()
+        self.cache.clear()
+        self._split = None
         metrics_base, metrics_final = {}, {}
         p = MODELS_DIR / "comparatif_modeles.csv"
         if p.exists():
@@ -126,6 +131,7 @@ class Registry:
         if not DATA_CSV.exists():
             return
         df = pd.read_csv(DATA_CSV)
+        self.df = df
         for c in df.columns:
             if c == TARGET:
                 continue
@@ -239,3 +245,9 @@ def predict_batch(req: BatchRequest):
     return {"model_id": m["id"], "threshold": t,
             "probabilities": [round(float(p), 4) for p in proba],
             "predictions": [int(p >= t) for p in proba]}
+
+
+# --------------------------------------------------------------------------- explicabilité (Module 5)
+from api.explain import build_router  # noqa: E402  (après la définition de registry)
+
+app.include_router(build_router(registry, to_frame, decision_label))
